@@ -4,9 +4,6 @@ library(ggplot2)
 library(pheatmap)
 library(mixOmics)
 
-
-#  mds  -  tsne   -   15 16 17
-
 #############################
 # PRETRAITEMENT DES DONNEES #
 #############################
@@ -55,69 +52,6 @@ data_filt[, int_cols_filt] <- sweep(data_filt[,int_cols_filt], 1, data_filt$gram
 # Transformation log des intensités
 data_filt[, int_cols_filt] <- log(data_filt[, int_cols_filt] + 1)
 
-#data_filt$Millesime <- as.numeric(sub("\\(.*", "", data_filt$echantillon))
-#data_filt <- data_filt[data_filt$Millesime >= 1989, ]
-
-
-
-
-# 
-# 
-# 
-# 
-# mz_cols <- names(data_filt)[-(1:3)]    # toutes les colonnes après echantillon, gramme, Position
-# mz_vals <- as.numeric(mz_cols)         # convertit ces noms en vecteur numérique
-# 
-# # 1. Lire la matrice “vin” et renommer Mass → mz
-# vin_raw <- readxl::read_excel("matrice_vin.xlsx") %>%
-#   dplyr::rename(mz = Mass)
-# 
-# # 2. Forcer mz en numérique
-# vin_raw$mz <- as.numeric(vin_raw$mz)
-# 
-# # 3. Déterminer les colonnes correspondant aux échantillons
-# #    (tout ce qui n’est pas la colonne mz)
-# sample_cols <- setdiff(colnames(vin_raw), "mz")
-# 
-# # 4. Fonction pour bornes ppm
-# ppm_tol <- function(mz, ppm = 5){
-#   tol <- mz * ppm/1e6
-#   c(mz - tol, mz + tol)
-# }
-# 
-# # 5. Pour chaque mz_vals, trouver l’indice dans vin_raw$mz
-# match_idx <- vapply(mz_vals, function(mz) {
-#   bnds <- ppm_tol(mz, 5)
-#   idxs <- which(vin_raw$mz >= bnds[1] & vin_raw$mz <= bnds[2])
-#   if(length(idxs) == 0) return(NA_integer_)
-#   # si plusieurs, prendre le plus proche
-#   idxs[which.min(abs(vin_raw$mz[idxs] - mz))]
-# }, integer(1))
-# 
-# # 6. Extraire la sous‐matrice (lignes = mz_vals, colonnes = samples)
-# matched_mat <- vin_raw[match_idx, sample_cols, drop = FALSE]
-# 
-# # 7. Donner à chaque ligne le nom de mz_vals
-# rownames(matched_mat) <- as.character(mz_vals)
-# 
-# # 8. Transposer pour que lignes = échantillon, colonnes = mz
-# vin_wide <- as.data.frame(t(matched_mat), stringsAsFactors = FALSE)
-# vin_wide$echantillon <- rownames(vin_wide)
-# 
-# # 9. Ajouter gramme = NA et Position = 6
-# vin_wide$gramme   <- NA_real_
-# vin_wide$Position <- 6
-# 
-# # 9. Après avoir construit vin_wide et ajouté Position=6 :
-# vin_wide[, int_cols_filt] <- log(vin_wide[, int_cols_filt] + 1)
-# 
-# # 10. Puis on réordonne et on fusionne
-# vin_wide <- vin_wide[, c("echantillon","gramme","Position", int_cols_filt)]
-# data_final <- rbind(data_filt, vin_wide)
-
-#data_filt$Millesime <- as.integer(
-#  sub("\\(.*", "", data_filt$echantillon)
-#)
 
 
 return (data_filt)
@@ -575,61 +509,3 @@ PCA_VIN()
                ###################
 
 ForetAleatoire()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 1. Chargement des packages
-library(ggplot2)
-
-# 2. Chargement de vos données prétraitées
-#    On part du résultat de Pretraitement(FALSE) ou data_final s'il inclut la position 6
-df <- Pretraitement(FALSE)      # ou data_filt si vous ne voulez pas la position 6
-
-# 3. Identification des colonnes d'intensité m/z
-mz_cols <- names(df)[!(names(df) %in% c("echantillon","gramme","Position"))]
-
-cor_mat  <- cor(t(df[, mz_cols]), use = "pairwise.complete.obs")
-dist_mat <- as.dist(1 - cor_mat)
-
-# 5. Exécution de la MDS (classique)
-mds_res <- cmdscale(dist_mat, k = 2, eig = TRUE)
-
-# 6. Construction d'un data.frame pour le plot
-mds_df <- data.frame(
-  MDS1      = mds_res$points[, 1],
-  MDS2      = mds_res$points[, 2],
-  Position  = factor(df$Position)
-)
-
-# 7. Visualisation avec ggplot2
-ggplot(mds_df, aes(x = MDS1, y = MDS2, color = Position)) +
-  geom_point(size = 3, alpha = 0.8) +
-  theme_minimal(base_size = 14) +
-  labs(
-    title    = "MDS des profils m/z",
-    x        = "Dimension 1",
-    y        = "Dimension 2",
-    color    = "Position",
-    shape    = "Millésime"
-  ) +
-  theme(
-    legend.position = "right"
-  )
-
